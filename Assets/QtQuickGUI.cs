@@ -20,6 +20,13 @@ public class QtQuickGUI : MonoBehaviour {
     [DllImport("QtUserInterfacePlugin")]
     private static extern void UpdateQtEventLoop();
 
+    [DllImport("QtUserInterfacePlugin")]
+    public static extern void RegisterTouchStartEvent(float x, float y, int touchpoint);
+    [DllImport("QtUserInterfacePlugin")]
+    public static extern void RegisterTouchEndEvent(float x, float y, int touchpoint);
+    [DllImport("QtUserInterfacePlugin")]
+    public static extern void RegisterTouchMoveEvent(float x, float y, int touchpoint);
+
     // Use this for initialization
     IEnumerator Start () {
         CreateTextureAndPassToPlugin();
