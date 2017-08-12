@@ -12,20 +12,31 @@ public class QtQuickGUI : MonoBehaviour {
     private static extern IntPtr GetRenderEventFunc();
 
     [DllImport("QtUserInterfacePlugin")]
-    private static extern void SetTextureFromUnity(IntPtr texture, int width, int height);
+    private static extern void SetTextureFromUnity(int objectId, IntPtr texture, int width, int height);
+    [DllImport("QtUserInterfacePlugin")]
+    private static extern void RemoveUIObject(int objectId);
 
     [DllImport("QtUserInterfacePlugin")]
-    private static extern void SetTimeFromUnity(float t);
+    private static extern void RegisterTouchStartEvent(int objectId, float x, float y, int touchpoint);
+    [DllImport("QtUserInterfacePlugin")]
+    private static extern void RegisterTouchEndEvent(int objectId, float x, float y, int touchpoint);
+    [DllImport("QtUserInterfacePlugin")]
+    private static extern void RegisterTouchMoveEvent(int objectId, float x, float y, int touchpoint);
 
-    [DllImport("QtUserInterfacePlugin")]
-    private static extern void UpdateQtEventLoop();
+    public void RegisterTouchStartEvent(float x, float y, int touchpoint)
+    {
+        RegisterTouchStartEvent(GetInstanceID(), x, y, touchpoint);
+    }
 
-    [DllImport("QtUserInterfacePlugin")]
-    public static extern void RegisterTouchStartEvent(float x, float y, int touchpoint);
-    [DllImport("QtUserInterfacePlugin")]
-    public static extern void RegisterTouchEndEvent(float x, float y, int touchpoint);
-    [DllImport("QtUserInterfacePlugin")]
-    public static extern void RegisterTouchMoveEvent(float x, float y, int touchpoint);
+    public void RegisterTouchEndEvent(float x, float y, int touchpoint)
+    {
+        RegisterTouchEndEvent(GetInstanceID(), x, y, touchpoint);
+    }
+
+    public void RegisterTouchMoveEvent(float x, float y, int touchpoint)
+    {
+        RegisterTouchMoveEvent(GetInstanceID(), x, y, touchpoint);
+    }
 
     // Use this for initialization
     IEnumerator Start () {
@@ -33,11 +44,6 @@ public class QtQuickGUI : MonoBehaviour {
         yield return StartCoroutine("CallPluginAtEndOfFrames");
 	}
 	
-	// Update is called once per frame
-	void Update () {
-        UpdateQtEventLoop();
-	}
-
     private void CreateTextureAndPassToPlugin()
     {
         // Create a texture
@@ -50,7 +56,7 @@ public class QtQuickGUI : MonoBehaviour {
         GetComponent<Renderer>().material.SetTextureScale("_MainTex", new Vector2(-1, 1));
 
         // Pass the texture pointer to the plugin
-        SetTextureFromUnity(tex.GetNativeTexturePtr(), tex.width, tex.height);
+        SetTextureFromUnity(GetInstanceID(), tex.GetNativeTexturePtr(), tex.width, tex.height);
     }
 
     private IEnumerator CallPluginAtEndOfFrames()
@@ -60,14 +66,14 @@ public class QtQuickGUI : MonoBehaviour {
             // Wait until all frame rendering is done
             yield return new WaitForEndOfFrame();
 
-            // Set time for the plugin
-            SetTimeFromUnity(Time.timeSinceLevelLoad);
+            // Issue a plugin event with instance ID identifier
 
-            // Issue a plugin event with arbitrary integer identifier.
-            // The plugin can distinguish between different
-            // things it needs to do based on this ID.
-            // For our simple plugin, it does not matter which ID we pass here.
-            GL.IssuePluginEvent(GetRenderEventFunc(), 1);
+            GL.IssuePluginEvent(GetRenderEventFunc(), GetInstanceID());
         }
+    }
+
+    void OnDestroy()
+    {
+        RemoveUIObject(GetInstanceID());
     }
 }

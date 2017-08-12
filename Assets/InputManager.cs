@@ -57,22 +57,18 @@ public class InputManager : MonoBehaviour {
                 QtQuickGUI guiObject = hitObject.GetComponent<QtQuickGUI>();
                 if (guiObject)
                 {
-                    //Debug.Log(hit.textureCoord.x + ", " + hit.textureCoord.y);
-
                     if (OVRInput.GetDown(OVRInput.Button.SecondaryIndexTrigger))
                     {
                         // push
-                        Debug.Log("push");
-                        QtQuickGUI.RegisterTouchStartEvent(-(hit.textureCoord.x - 1.0f), hit.textureCoord.y, 0);
+                        guiObject.RegisterTouchStartEvent(-(hit.textureCoord.x - 1.0f), hit.textureCoord.y, 0);
                     } else if (OVRInput.GetUp(OVRInput.Button.SecondaryIndexTrigger))
                     {
-                        Debug.Log("release");
                         // release
-                        QtQuickGUI.RegisterTouchEndEvent(-(hit.textureCoord.x - 1.0f), hit.textureCoord.y, 0);
+                        guiObject.RegisterTouchEndEvent(-(hit.textureCoord.x - 1.0f), hit.textureCoord.y, 0);
                     } else
                     {
                         // move
-                        QtQuickGUI.RegisterTouchMoveEvent(-(hit.textureCoord.x - 1.0f), hit.textureCoord.y, 0);
+                        guiObject.RegisterTouchMoveEvent(-(hit.textureCoord.x - 1.0f), hit.textureCoord.y, 0);
                     }
                 }
             }
