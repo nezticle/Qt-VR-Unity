@@ -9,6 +9,12 @@ public class InputManager : MonoBehaviour {
     private GameObject pointerRight;
     private GameObject pointerLeft;
     private GameObject targetRight;
+    private GameObject targetLeft;
+
+    private QtQuickGUI targetGuiRight = null;
+    private Vector2 lastHitRight;
+    private QtQuickGUI targetGuiLeft = null;
+    private Vector2 lastHitLeft;
 
     public Transform leftHand;
     public Transform rightHand;
@@ -24,6 +30,9 @@ public class InputManager : MonoBehaviour {
         targetRight = GameObject.CreatePrimitive(PrimitiveType.Sphere);
         targetRight.transform.localScale = new Vector3(0.1f, 0.1f, 0.1f);
         targetRight.GetComponent<Collider>().enabled = false;
+        targetLeft = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+        targetLeft.transform.localScale = new Vector3(0.1f, 0.1f, 0.1f);
+        targetLeft.GetComponent<Collider>().enabled = false;
     }
 	
 	// Update is called once per frame
@@ -36,7 +45,7 @@ public class InputManager : MonoBehaviour {
         }
 
         // Primary
-        if (OVRInput.Get(OVRInput.Button.SecondaryHandTrigger))
+        if (OVRInput.Get(OVRInput.RawButton.RHandTrigger))
         {
             pointerRight.SetActive(true);
 
@@ -57,36 +66,125 @@ public class InputManager : MonoBehaviour {
                 QtQuickGUI guiObject = hitObject.GetComponent<QtQuickGUI>();
                 if (guiObject)
                 {
-                    if (OVRInput.GetDown(OVRInput.Button.SecondaryIndexTrigger))
+                    if (targetGuiRight && targetGuiRight != guiObject)
+                    {
+                        // If there was previously another target, send a release event
+                        sendTouchReleaseEvent(targetGuiRight, lastHitRight);
+                    }
+                    
+                    lastHitRight = new Vector2(-(hit.textureCoord.x - 1.0f), hit.textureCoord.y);
+
+                    if (OVRInput.GetDown(OVRInput.RawButton.RIndexTrigger))
                     {
                         // push
-                        guiObject.RegisterTouchStartEvent(-(hit.textureCoord.x - 1.0f), hit.textureCoord.y, 0);
-                    } else if (OVRInput.GetUp(OVRInput.Button.SecondaryIndexTrigger))
+                        targetGuiRight = guiObject;
+                        sendTouchStartEvent(guiObject, lastHitRight);
+                    }
+                    else if (OVRInput.GetUp(OVRInput.RawButton.RIndexTrigger))
                     {
                         // release
-                        guiObject.RegisterTouchEndEvent(-(hit.textureCoord.x - 1.0f), hit.textureCoord.y, 0);
-                    } else
+                        sendTouchReleaseEvent(guiObject, lastHitRight);
+                        targetGuiRight = null;
+                    }
+                    else if (OVRInput.Get(OVRInput.RawButton.RIndexTrigger))
                     {
                         // move
-                        guiObject.RegisterTouchMoveEvent(-(hit.textureCoord.x - 1.0f), hit.textureCoord.y, 0);
+                        sendTouchMoveEvent(guiObject, lastHitRight);
                     }
                 }
             }
 
-        } else
-        {
+        } else {
+            if (targetGuiRight)
+            {
+                // If we released the hand trigger, send a release event
+                sendTouchReleaseEvent(targetGuiRight, lastHitRight);
+                targetGuiRight = null;
+            }
             pointerRight.SetActive(false);
             targetRight.SetActive(false);
         }
 
         // Secondary
-        if (OVRInput.Get(OVRInput.Button.PrimaryHandTrigger))
+        if (OVRInput.Get(OVRInput.RawButton.LHandTrigger))
         {
+            pointerLeft.SetActive(true);
 
-        } else
+            pointerLeft.transform.localPosition = new Vector3(0f, -0.02f, 0f);
+
+            RaycastHit hit;
+            if (Physics.Raycast(leftHand.transform.position, leftHand.transform.forward, out hit, 100))
+            {
+                //Debug.Log("hit!");
+                Vector3 scale = new Vector3(1f, 1f, 1f);
+                scale.z = hit.distance;
+                pointerLeft.transform.localScale = scale;
+
+                targetLeft.transform.position = hit.point;
+                targetLeft.SetActive(true);
+
+                GameObject hitObject = hit.collider.gameObject;
+                QtQuickGUI guiObject = hitObject.GetComponent<QtQuickGUI>();
+                if (guiObject)
+                {
+                    if (targetGuiLeft && targetGuiLeft != guiObject)
+                    {
+                        // If there was previously another target, send a release event
+                        sendTouchReleaseEvent(targetGuiLeft, lastHitLeft);
+                    }
+                    
+                    lastHitLeft = new Vector2(-(hit.textureCoord.x - 1.0f), hit.textureCoord.y);
+
+                    if (OVRInput.GetDown(OVRInput.RawButton.LIndexTrigger))
+                    {
+                        // push
+                        targetGuiLeft = guiObject;
+                        sendTouchStartEvent(guiObject, lastHitLeft);
+                    }
+                    else if (OVRInput.GetUp(OVRInput.RawButton.LIndexTrigger))
+                    {
+                        // release
+                        sendTouchReleaseEvent(guiObject, lastHitLeft);
+                        targetGuiLeft = null;
+                    }
+                    else if (OVRInput.Get(OVRInput.RawButton.LIndexTrigger))
+                    {
+                        // move
+                        sendTouchMoveEvent(guiObject, lastHitLeft);
+                    }
+                }
+            }
+
+        }
+        else
         {
-            
+            if (targetGuiLeft)
+            {
+                // If we released the hand trigger, send a release event
+                sendTouchReleaseEvent(targetGuiLeft, lastHitLeft);
+                targetGuiLeft = null;
+            }
+            pointerLeft.SetActive(false);
+            targetLeft.SetActive(false);
         }
 
-	}
+    }
+
+    private void sendTouchStartEvent(QtQuickGUI target, Vector2 position)
+    {
+        //Debug.Log("sendTouchStart");
+        target.RegisterTouchStartEvent(position.x, position.y, 0);
+    }
+
+    private void sendTouchReleaseEvent(QtQuickGUI target, Vector2 position)
+    {
+        //Debug.Log("sendTouchRelease");
+        target.RegisterTouchEndEvent(position.x, position.y, 0);
+    }
+
+    private void sendTouchMoveEvent(QtQuickGUI target, Vector2 position)
+    {
+        //Debug.Log("sendTouchMove");
+        target.RegisterTouchMoveEvent(position.x, position.y, 0);
+    }
 }
