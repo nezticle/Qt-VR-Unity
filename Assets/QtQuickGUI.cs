@@ -7,12 +7,17 @@ public class QtQuickGUI : MonoBehaviour {
 
     public int textureWidth = 512;
     public int textureHeight = 512;
+    public string qmlSource;
 
     [DllImport("QtUserInterfacePlugin")]
     private static extern IntPtr GetRenderEventFunc();
 
     [DllImport("QtUserInterfacePlugin")]
     private static extern void SetTextureFromUnity(int objectId, IntPtr texture, int width, int height);
+
+    [DllImport("QtUserInterfacePlugin")]
+    private static extern void SetQmlSourceFromUnity(int objectId, string qmlSource);
+
     [DllImport("QtUserInterfacePlugin")]
     private static extern void RemoveUIObject(int objectId);
 
@@ -41,6 +46,7 @@ public class QtQuickGUI : MonoBehaviour {
     // Use this for initialization
     IEnumerator Start () {
         CreateTextureAndPassToPlugin();
+        SetQmlSourceFromUnity(GetInstanceID(), qmlSource);
         yield return StartCoroutine("CallPluginAtEndOfFrames");
 	}
 	
